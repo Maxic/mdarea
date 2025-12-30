@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Notes</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.2.0/github-markdown.min.css">
+    <style>
+        :root { --bg: #ffffff; --text: #24292f; --border: #d0d7de; }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #0d1117; --text: #c9d1d9; --border: #30363d; }
+        }
+        body { margin: 0; height: 100vh; display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); color: var(--text); overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+        #editor { 
+            border: none; 
+            padding: 20px; 
+            outline: none; 
+            resize: none; 
+            background: transparent; 
+            color: inherit; 
+            font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; 
+            font-size: 14px; 
+            line-height: 1.5;
+            border-right: 1px solid var(--border); 
+        }
+        #preview { padding: 20px; overflow-y: auto; }
+        /* Override github markdown body bg to be transparent so it adopts our dark mode variables */
+        .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; background: transparent !important; color: inherit !important; }
+        
+        @media (max-width: 768px) {
+            body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+            #editor { border-right: none; border-bottom: 1px solid var(--border); }
+        }
+    </style>
+</head>
+<body>
+    <textarea id="editor" placeholder="# Start typing..."></textarea>
+    <div id="preview" class="markdown-body"></div>
+
+    <script type="module">
+        import { marked } from 'https://cdn.jsdelivr.net/npm/marked@9.1.2/lib/marked.esm.js';
+
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        
+        const debounce = (fn, delay) => {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn(...args), delay);
+            };
+        };
+
+        // Compression Utils (Gzip + Base64Url)
+        async function compress(text) {
+            if (!text) return '';
+            const stream = new CompressionStream('gzip');
+            const writer = stream.writable.getWriter();
+            writer.write(new TextEncoder().encode(text));
+            writer.close();
+            const buffer = await new Response(stream.readable).arrayBuffer();
+            return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        async function decompress(base64) {
+            if (!base64) return '';
+            try {
+                const str = base64.replace(/-/g, '+').replace(/_/g, '/');
+                const pad = str.length % 4;
+                const padded = pad ? str + '='.repeat(4 - pad) : str;
+                const bytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+                const stream = new DecompressionStream('gzip');
+                const writer = stream.writable.getWriter();
+                writer.write(bytes);
+                writer.close();
+                return await new Response(stream.readable).text();
+            } catch (e) {
+                console.error('Failed to decompress:', e);
+                return '';
+            }
+        }
+
+        const updateHash = debounce(async (text) => {
+            const hash = await compress(text);
+            history.replaceState(null, null, hash ? '#' + hash : location.pathname);
+        }, 500);
+
+        function render() {
+            const text = editor.value;
+            preview.innerHTML = marked.parse(text);
+            
+            // Extract title from first H1
+            const h1 = preview.querySelector('h1');
+            document.title = h1 ? h1.innerText : 'Markdown Notes';
+
+            updateHash(text);
+        }
+
+        // Init
+        (async () => {
+            const hash = location.hash.slice(1);
+            if (hash) {
+                editor.value = await decompress(hash);
+            } else {
+                editor.value = "# Hello World\n\nThis is a serverless, single-file markdown editor.\n\n- No database\n- Shared via URL hash\n- Auto-compressed";
+            }
+            render();
+        })();
+
+        editor.addEventListener('input', render);
+    </script>
+</body>
+</html>
