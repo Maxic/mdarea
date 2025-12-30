@@ -52,6 +52,37 @@
             transition: all 0.2s;
         }
         #copy-btn:hover { opacity: 1; border-color: #8b949e; }
+        .toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            box-sizing: border-box;
+        }
+        .toolbar button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            font-size: 14px;
+            min-width: 36px;
+        }
+        .toolbar button:hover { background: rgba(127, 127, 127, 0.1); }
+        /* Ensure content isn't hidden behind toolbar */
+        #editor, #preview { padding-bottom: 60px; }
+        /* Make preview checkboxes clickable */
+        #preview input[type="checkbox"] { cursor: pointer; }
     </style>
 </head>
 <body>
@@ -61,6 +92,14 @@
     </button>
     <textarea id="editor" placeholder="# Start typing..."></textarea>
     <div id="preview" class="markdown-body"></div>
+
+    <div class="toolbar">
+        <button onclick="insert('**', '**')">B</button>
+        <button onclick="insert('*', '*')">I</button>
+        <button onclick="insert('[', '](url)')">Link</button>
+        <button onclick="insert('```\n', '\n```')">Code</button>
+        <button onclick="insert('\n- [ ] ', '')" style="font-size: 16px">☑</button>
+    </div>
 
     <script type="module">
         import { marked } from 'https://cdn.jsdelivr.net/npm/marked@9.1.2/lib/marked.esm.js';
@@ -111,6 +150,50 @@
             history.replaceState(null, null, hash ? '#' + hash : location.pathname);
         }, 500);
 
+        // Helper to insert text at cursor
+        window.insert = (before, after) => {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const text = editor.value;
+            const selection = text.substring(start, end);
+            
+            // Insert text
+            const newText = text.substring(0, start) + before + selection + after + text.substring(end);
+            editor.value = newText;
+            
+            // Restore cursor/selection
+            editor.selectionStart = start + before.length;
+            editor.selectionEnd = end + before.length;
+            editor.focus();
+            
+            render();
+        };
+
+        // Handle checkbox clicks in preview
+        function toggleTask(targetIndex) {
+            const text = editor.value;
+            let matchCount = 0;
+            
+            // Regex for Markdown checkboxes: - [ ] or * [x] etc.
+            const newText = text.replace(/^(\s*[-*+]\s*\[)([ xX])(\])/gm, (match, prefix, state, suffix) => {
+                if (matchCount === targetIndex) {
+                    const newState = state === ' ' ? 'x' : ' ';
+                    matchCount++;
+                    return `${prefix}${newState}${suffix}`;
+                }
+                matchCount++;
+                return match;
+            });
+
+            if (newText !== text) {
+                editor.value = newText;
+                // Preserve scroll pos
+                const scrollPos = preview.scrollTop;
+                render();
+                preview.scrollTop = scrollPos;
+            }
+        }
+
         function render() {
             const text = editor.value;
             preview.innerHTML = marked.parse(text);
@@ -118,6 +201,13 @@
             // Extract title from first H1
             const h1 = preview.querySelector('h1');
             document.title = h1 ? h1.innerText : 'Markdown Notes';
+
+            // Make checkboxes interactive
+            const checkboxes = preview.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach((cb, index) => {
+                cb.disabled = false;
+                cb.addEventListener('change', () => toggleTask(index));
+            });
 
             updateHash(text);
         }
