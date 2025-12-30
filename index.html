@@ -31,38 +31,16 @@
             body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
             #editor { border-right: none; border-bottom: 1px solid var(--border); }
         }
-        #copy-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            opacity: 0.7;
-            transition: all 0.2s;
-        }
-        #copy-btn:hover { opacity: 1; border-color: #8b949e; }
         .toolbar {
             position: fixed;
-            bottom: 0;
+            top: 0;
             left: 0;
             width: 100%;
             background: var(--bg);
-            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
             padding: 8px;
             display: flex;
             gap: 8px;
-            justify-content: center;
             align-items: center;
             z-index: 100;
             box-sizing: border-box;
@@ -79,27 +57,40 @@
             min-width: 36px;
         }
         .toolbar button:hover { background: rgba(127, 127, 127, 0.1); }
-        /* Ensure content isn't hidden behind toolbar */
-        #editor, #preview { padding-bottom: 60px; }
+        
+        #copy-btn {
+            margin-left: auto;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0.7;
+            transition: all 0.2s;
+        }
+        #copy-btn:hover { opacity: 1; border-color: #8b949e; }
+
+        /* Ensure content isn't hidden behind top toolbar */
+        #editor, #preview { padding-top: 60px; padding-bottom: 20px; }
         /* Make preview checkboxes clickable */
         #preview input[type="checkbox"] { cursor: pointer; }
     </style>
 </head>
 <body>
-    <button id="copy-btn" title="Copy Link to Clipboard">
-        <svg height="14" width="14" viewBox="0 0 16 16" version="1.1" aria-hidden="true"><path fill="currentColor" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg>
-        Share
-    </button>
-    <textarea id="editor" placeholder="# Start typing..."></textarea>
-    <div id="preview" class="markdown-body"></div>
-
     <div class="toolbar">
         <button onclick="insert('**', '**')">B</button>
         <button onclick="insert('*', '*')">I</button>
         <button onclick="insert('[', '](url)')">Link</button>
         <button onclick="insert('```\n', '\n```')">Code</button>
         <button onclick="insert('\n- [ ] ', '')" style="font-size: 16px">☑</button>
+        <button id="copy-btn" title="Copy Link to Clipboard">
+            <svg height="14" width="14" viewBox="0 0 16 16" version="1.1" aria-hidden="true"><path fill="currentColor" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg>
+            Share
+        </button>
     </div>
+    <textarea id="editor" placeholder="# Start typing..."></textarea>
+    <div id="preview" class="markdown-body"></div>
 
     <script type="module">
         import { marked } from 'https://cdn.jsdelivr.net/npm/marked@9.1.2/lib/marked.esm.js';
